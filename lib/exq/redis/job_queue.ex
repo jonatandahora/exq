@@ -21,8 +21,8 @@ defmodule Exq.Redis.JobQueue do
   def enqueue(redis, namespace, queue, worker, args, options) do
     {jid, job_serialized} = to_job_serialized(queue, worker, args, options)
     case enqueue(redis, namespace, queue, job_serialized) do
-      :ok    -> {:ok, jid}
-      other  -> other
+      :ok   -> {:ok, jid}
+      other -> other
     end
   end
   def enqueue(redis, namespace, job_serialized) do
