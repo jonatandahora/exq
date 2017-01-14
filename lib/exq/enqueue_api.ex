@@ -35,8 +35,16 @@ defmodule Exq.Enqueuer.EnqueueApi do
         GenServer.call(pid, {:enqueue_unique, queue, worker, args}, Config.get(:genserver_timeout))
       end
 
+      def enqueue_unique(pid, from, queue, worker, args) do
+        GenServer.cast(pid, {:enqueue_unique, from, queue, worker, args})
+      end
+
       def enqueue_unique(pid, queue, worker, args, key) do
         GenServer.call(pid, {:enqueue_unique, queue, worker, args, key}, Config.get(:genserver_timeout))
+      end
+
+      def enqueue_unique(pid, from, queue, worker, args, key) do
+        GenServer.cast(pid, {:enqueue_unique, queue, worker, args, key})
       end
 
       @doc """

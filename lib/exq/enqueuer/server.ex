@@ -54,19 +54,41 @@ defmodule Exq.Enqueuer.Server do
     {:noreply, state}
   end
 
+  def handle_cast({:enqueue_unique, from, queue, offset, worker, args}, state) do
+    handle_cast({:enqueue_unique, from, queue, worker, args, nil}, state)
+  end
+
+  def handle_cast({:enqueue_unique, from, queue, offset, worker, args, unique_key}, state) do
+    perform = fn -> handle_cast({:enqueue, from, queue, worker, args}, state) end
+    key = unique_key || Enum.join(args, ",")
+    uniqueness_namespace = combined_namespace(state.namespace, queue, worker)
+    response = with_unique_lock(perform, state.redis, uniqueness_namespace, args, key)
+
+    GenServer.reply(from, response)
+    {:noreply, state}
+  end
+
   def handle_call({:enqueue, queue, worker, args}, _from, state) do
+    IO.puts "****************enqueue******************************"
+
     response = JobQueue.enqueue(state.redis, state.namespace, queue, worker, args)
     {:reply, response, state}
   end
 
   def handle_call({:enqueue_unique, queue, worker, args}, from, state) do
+    IO.puts "****************called without unique key******************************"
+
     handle_call({:enqueue_unique, queue, worker, args, nil}, from, state)
   end
+
   def handle_call({:enqueue_unique, queue, worker, args, unique_key}, from, state) do
+    IO.puts "****************called with unique key******************************"
     perform = fn -> handle_call({:enqueue, queue, worker, args}, from, state) end
     key = unique_key || Enum.join(args, ",")
     uniqueness_namespace = combined_namespace(state.namespace, queue, worker)
     response = with_unique_lock(perform, state.redis, uniqueness_namespace, args, key)
+    IO.puts("*****************************************************")
+    IO.inspect({:reply, response, state})
     {:reply, response, state}
   end
 
